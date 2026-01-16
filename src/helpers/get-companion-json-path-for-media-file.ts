@@ -1,5 +1,6 @@
 import { existsSync } from "fs"
 import { basename, dirname, extname, resolve } from 'path'
+import { readdirSync } from 'fs'
 
 export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|null {
   const directoryPath = dirname(mediaFilePath);
@@ -54,6 +55,24 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
     if (existsSync(jsonFilePath)) {
       return jsonFilePath;
     }
+  }
+
+  // Fallback: If no specific JSON file was found, look for a supplemental-metadata.json file with the same base name
+  // but with a different media file extension. This handles the case where IMG_0201.HEIC and IMG_0201.MP4 both use
+  // IMG_0201.HEIC.supplemental-metadata.json or IMG_0201.MP4.supplemental-metadata.json
+  try {
+    const filesInDirectory = readdirSync(directoryPath);
+    for (const file of filesInDirectory) {
+      // Look for files matching the pattern: {baseNameWithoutExtension}.{any-extension}.supplemental-metadata.json
+      if (file.startsWith(mediaFileNameWithoutExtension) && file.endsWith('.supplemental-metadata.json')) {
+        const candidatePath = resolve(directoryPath, file);
+        if (existsSync(candidatePath)) {
+          return candidatePath;
+        }
+      }
+    }
+  } catch (error) {
+    // If we can't read the directory, just continue
   }
 
   // If no JSON file was found, just return null - we won't be able to adjust the date timestamps without finding a
