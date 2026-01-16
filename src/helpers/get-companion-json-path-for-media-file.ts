@@ -12,21 +12,25 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
   mediaFileNameWithoutExtension = mediaFileNameWithoutExtension.replace(/[-]edited$/i, '');
 
   // The naming pattern for the JSON sidecar files provided by Google Takeout seem to be inconsistent. For `foo.jpg`,
-  // the JSON file is sometimes `foo.json` but sometimes it's `foo.jpg.json`. Here we start building up a list of potential
+  // the JSON file is sometimes `foo.json` but sometimes it's `foo.jpg.json`. Google also provides a `supplemental-metadata.json`
+  // file with the naming pattern `foo.jpg.supplemental-metadata.json`. Here we start building up a list of potential
   // JSON filenames so that we can try to find them later
   const potentialJsonFileNames: string[] = [
     `${mediaFileNameWithoutExtension}.json`,
     `${mediaFileNameWithoutExtension}${mediaFileExtension}.json`,
+    `${mediaFileNameWithoutExtension}${mediaFileExtension}.supplemental-metadata.json`,
   ];
 
   // Another edge case which seems to be quite inconsistent occurs when we have media files containing a number suffix for example "foo(1).jpg"
   // In this case, we don't get "foo(1).json" nor "foo(1).jpg.json". Instead, we strangely get "foo.jpg(1).json".
   // We can use a regex to look for this edge case and add that to the potential JSON filenames to look out for
+  // We also need to check for the supplemental-metadata variant: "foo.jpg.supplemental-metadata(1).json"
   const nameWithCounterMatch = mediaFileNameWithoutExtension.match(/(?<name>.*)(?<counter>\(\d+\))$/);
   if (nameWithCounterMatch) {
     const name = nameWithCounterMatch?.groups?.['name'];
     const counter = nameWithCounterMatch?.groups?.['counter'];
     potentialJsonFileNames.push(`${name}${mediaFileExtension}${counter}.json`);
+    potentialJsonFileNames.push(`${name}${mediaFileExtension}.supplemental-metadata${counter}.json`);
   }
 
   // Sometimes the media filename ends with extra dash (eg. filename_n-.jpg + filename_n.json)
