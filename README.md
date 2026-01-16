@@ -20,8 +20,9 @@ A tool to populate missing `DateTimeOriginal` EXIF metadata in Google Photos tak
 Example usage:
 
 ```
-yarn
-yarn start --inputDir ~/takeout --outputDir ~/output --errorDir ~/error
+npm install
+npm run prepack
+npm start -- --inputDir ~/Downloads/GooglePhotos/Test --outputDir ~/Downloads/GooglePhotos/Test/output --errorDir ~/Downloads/GooglePhotos/Test/error
 ```
 
 
