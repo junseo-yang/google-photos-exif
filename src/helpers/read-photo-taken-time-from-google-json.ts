@@ -15,6 +15,8 @@ export async function readPhotoTakenTimeFromGoogleJson(mediaFile: MediaFileInfo)
   if (googleJsonMetadata?.photoTakenTime?.timestamp) {
     const photoTakenTimestamp = parseInt(googleJsonMetadata.photoTakenTime.timestamp, 10);
     const photoTakenDate = new Date(photoTakenTimestamp * 1000);
+    // Format as ISO string in UTC for consistent timezone handling
+    // Format: YYYY-MM-DDTHH:MM:SS.sssZ (Z explicitly indicates UTC)
     return photoTakenDate.toISOString();
   } else {
     return null;

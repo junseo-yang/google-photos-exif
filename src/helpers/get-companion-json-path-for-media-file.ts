@@ -45,7 +45,10 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
 
   if (endsWithExtraDash || endsWithExtraNChar || endsWithExtraUnderscore) {
     // We need to remove that extra char at the end
-    potentialJsonFileNames.push(`${mediaFileNameWithoutExtension.slice(0, -1)}.json`);
+    const baseNameWithoutExtraChar = mediaFileNameWithoutExtension.slice(0, -1);
+    potentialJsonFileNames.push(`${baseNameWithoutExtraChar}.json`);
+    potentialJsonFileNames.push(`${baseNameWithoutExtraChar}${mediaFileExtension}.json`);
+    potentialJsonFileNames.push(`${baseNameWithoutExtraChar}${mediaFileExtension}.supplemental-metadata.json`);
   }
 
   // Now look to see if we have a JSON file in the same directory as the image for any of the potential JSON file names
@@ -68,6 +71,45 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
         const candidatePath = resolve(directoryPath, file);
         if (existsSync(candidatePath)) {
           return candidatePath;
+        }
+      }
+    }
+  } catch (error) {
+    // If we can't read the directory, just continue
+  }
+
+  // Final fallback: If no JSON file was found and the filename might have been truncated (e.g., filename_.mp4 from filename_high.mp4),
+  // look for ANY JSON file that starts with the base name. This handles cases where filenames are truncated due to length limits.
+  try {
+    const filesInDirectory = readdirSync(directoryPath);
+    for (const file of filesInDirectory) {
+      // Look for any .json file that starts with our media filename (which might be truncated)
+      if (file.startsWith(mediaFileNameWithoutExtension) && file.endsWith('.json')) {
+        const candidatePath = resolve(directoryPath, file);
+        if (existsSync(candidatePath)) {
+          return candidatePath;
+        }
+      }
+    }
+  } catch (error) {
+    // If we can't read the directory, just continue
+  }
+
+  // Another fallback: Look for JSON files that could be the original filename before truncation.
+  // This handles cases where the media file is truncated (e.g., _talkv_wmAq9538na_P1jlMs3zsts6kCdsXUWL10_talkv_high.mp4)
+  // but the JSON file is the truncated version (e.g., _talkv_wmAq9538na_P1jlMs3zsts6kCdsXUWL10_talkv.json).
+  // In this case, the media filename starts with the JSON filename without extension.
+  try {
+    const filesInDirectory = readdirSync(directoryPath);
+    for (const file of filesInDirectory) {
+      if (file.endsWith('.json')) {
+        const jsonFileNameWithoutExtension = file.slice(0, -5); // Remove .json
+        // Check if our media filename starts with this JSON base name
+        if (mediaFileNameWithoutExtension.startsWith(jsonFileNameWithoutExtension)) {
+          const candidatePath = resolve(directoryPath, file);
+          if (existsSync(candidatePath)) {
+            return candidatePath;
+          }
         }
       }
     }
