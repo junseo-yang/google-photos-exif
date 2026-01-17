@@ -79,15 +79,24 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
   }
 
   // Final fallback: If no JSON file was found and the filename might have been truncated (e.g., filename_.mp4 from filename_high.mp4),
-  // look for ANY JSON file that starts with the base name. This handles cases where filenames are truncated due to length limits.
+  // look for ANY JSON file that starts with the base name, but only if it doesn't have a counter suffix.
+  // This handles cases where filenames are truncated due to length limits.
+  // We exclude files with counter suffixes to avoid matching SNOW.mp4.supplemental-metadata(1).json for SNOW.mp4
   try {
     const filesInDirectory = readdirSync(directoryPath);
     for (const file of filesInDirectory) {
       // Look for any .json file that starts with our media filename (which might be truncated)
+      // but exclude files with counter patterns like (1), (2), etc. unless our media file also has a counter
       if (file.startsWith(mediaFileNameWithoutExtension) && file.endsWith('.json')) {
-        const candidatePath = resolve(directoryPath, file);
-        if (existsSync(candidatePath)) {
-          return candidatePath;
+        // Check if the JSON file has a counter suffix
+        const hasCounterSuffix = /\(\d+\)\.json$/.test(file);
+        // Only match if both have counters or neither have counters
+        const mediaHasCounter = /\(\d+\)$/.test(mediaFileNameWithoutExtension);
+        if (hasCounterSuffix === mediaHasCounter) {
+          const candidatePath = resolve(directoryPath, file);
+          if (existsSync(candidatePath)) {
+            return candidatePath;
+          }
         }
       }
     }
