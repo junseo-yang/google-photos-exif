@@ -113,6 +113,7 @@ class GooglePhotosExif extends Command {
 
     this.log(`--- Processing media files ---`);
     const fileNamesWithEditedExif: string[] = [];
+    const filesNotUpdated: { fileName: string; reason: string }[] = [];
 
     for (let i = 0, mediaFile; mediaFile = mediaFiles[i]; i++) {
 
@@ -130,10 +131,25 @@ class GooglePhotosExif extends Command {
             await updateExifMetadata(mediaFile, photoTimeTaken, directories.error);
             fileNamesWithEditedExif.push(mediaFile.outputFileName);
             this.log(`Updated "DateTimeOriginal" EXIF metadata to: ${mediaFile.outputFileName}`);
+          } else {
+            filesNotUpdated.push({
+              fileName: mediaFile.outputFileName,
+              reason: 'EXIF date already matches photoTakenTime',
+            });
           }
+        } else {
+          filesNotUpdated.push({
+            fileName: mediaFile.outputFileName,
+            reason: 'File does not support EXIF metadata',
+          });
         }
 
         await updateFileModificationDate(mediaFile.outputFilePath, photoTimeTaken);
+      } else {
+        filesNotUpdated.push({
+          fileName: mediaFile.outputFileName,
+          reason: 'No photoTakenTime found in JSON metadata',
+        });
       }
     }
 
@@ -148,6 +164,13 @@ class GooglePhotosExif extends Command {
       fileNamesWithEditedExif.forEach(fileNameWithEditedExif => this.log(fileNameWithEditedExif));
     } else {
       this.log(`--- We did not edit EXIF metadata for any of the files. This could be because all files already had a DateTimeOriginal field that matched the JSON metadata, or because we did not have a corresponding JSON file. ---`);
+    }
+    
+    if (filesNotUpdated.length > 0) {
+      this.log(`--- ${filesNotUpdated.length} files were not updated with EXIF metadata for the following reasons: ---`);
+      filesNotUpdated.forEach(file => {
+        this.log(`${file.fileName}: ${file.reason}`);
+      });
     }
   }
 }
