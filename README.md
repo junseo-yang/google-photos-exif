@@ -25,6 +25,14 @@ npm run prepack
 npm start -- --inputDir ~/Downloads/GooglePhotos/Test --outputDir ~/Downloads/GooglePhotos/Test/output --errorDir ~/Downloads/GooglePhotos/Test/error
 ```
 
+## Useful commands
+```bash
+# Compare files in two directories (e.g. to see which files were not exported in Google Takeout)
+echo "=== Only in Photos-3-001 ===" && comm -23 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/TakeoutPhoto/Takeout/Google\ Photos/Photos\ from\ 2019 -type f -exec basename {} \; | sort)\necho ""\necho "=== Only in Takeout ===" && comm -13 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/TakeoutPhoto/Takeout/Google\ Photos/Photos\ from\ 2019 -type f -exec basename {} \; | sort)
+
+# Copy json files from one directory to another
+cp ~/Downloads/TakeoutPhoto/Takeout/"Google Photos"/"Photos from 2019"/*.json ~/Downloads/GooglePhotos/Photos-3-001/
+```
 
 ## Background
 
