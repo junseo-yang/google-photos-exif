@@ -4,15 +4,21 @@ A tool to populate missing `DateTimeOriginal` EXIF metadata in Google Photos tak
 
 ## Table of Contents
 
-* [Quick Start](#quick-start)
-* [Background](#background)
-* [Structure of Google Takeout Export](#structure-of-google-takeout-export)
-* [How to download Google Takeout content](#how-to-download-google-takeout-content)
-* [What inputs do I need to provide?](#what-inputs-do-i-need-to-provide)
-* [What does the tool do?](#what-does-the-tool-do)
-* [Supported file types](#supported-file-types)
-* [How are media files matched to JSON sidecar files?](#how-are-media-files-matched-to-json-sidecar-files)
-* [Disclaimer?](#disclaimer)
+- [google-photos-exif](#google-photos-exif)
+  - [Table of Contents](#table-of-contents)
+  - [Quick Start](#quick-start)
+  - [Useful commands](#useful-commands)
+  - [Background](#background)
+  - [Structure of Google Takeout export](#structure-of-google-takeout-export)
+  - [How to download Google Takeout content](#how-to-download-google-takeout-content)
+  - [What inputs do I need to provide?](#what-inputs-do-i-need-to-provide)
+  - [Configuring supported file types](#configuring-supported-file-types)
+  - [What does the tool do?](#what-does-the-tool-do)
+  - [How are media files matched to JSON sidecar files?](#how-are-media-files-matched-to-json-sidecar-files)
+    - [Images have corresponding JSON files](#images-have-corresponding-json-files)
+    - [Edited images (e.g. "foo-edited.jpg") don't have their own JSON files](#edited-images-eg-foo-editedjpg-dont-have-their-own-json-files)
+    - [Files with numbered suffixes (e.g. "foo(1).jpg") follow a different pattern for the naming of JSON files](#files-with-numbered-suffixes-eg-foo1jpg-follow-a-different-pattern-for-the-naming-of-json-files)
+  - [Disclaimer](#disclaimer)
 
 
 ## Quick Start
@@ -28,7 +34,18 @@ npm start -- --inputDir ~/Downloads/GooglePhotos/Test --outputDir ~/Downloads/Go
 ## Useful commands
 ```bash
 # Compare files in two directories (e.g. to see which files were not exported in Google Takeout)
-echo "=== Only in Photos-3-001 ===" && comm -23 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/TakeoutPhoto/Takeout/Google\ Photos/Photos\ from\ 2019 -type f -exec basename {} \; | sort)\necho ""\necho "=== Only in Takeout ===" && comm -13 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/TakeoutPhoto/Takeout/Google\ Photos/Photos\ from\ 2019 -type f -exec basename {} \; | sort)
+echo "=== Only in Photos-3-001 ===" && comm -23 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos -type f -exec basename {} \; | sort)
+echo ""
+echo "=== Only in Takeout ===" && comm -13 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos -type f -exec basename {} \; | sort)
+echo ""
+echo "=== In both ===" && comm -12 <(find ~/Downloads/GooglePhotos/Photos-3-001 -type f -exec basename {} \; | sort) <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos -type f -exec basename {} \; | sort)
+
+# Compare files in two directories (case in-sensitive - IMG_7094.jpg vs IMG_7094.JPG are different)
+echo "=== Only in Photos from 2020 ===" && comm -23 <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos\ from\ 2020 -type f -exec basename {} \; | tr '[:upper:]' '[:lower:]' | LC_ALL=C sort -u) <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos\ from\ 2021 -type f -exec basename {} \; | tr '[:upper:]' '[:lower:]' | LC_ALL=C sort -u)
+echo ""
+echo "=== Only in Photos from 2021 ===" && comm -13 <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos\ from\ 2020 -type f -exec basename {} \; | tr '[:upper:]' '[:lower:]' | LC_ALL=C sort -u) <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos\ from\ 2021 -type f -exec basename {} \; | tr '[:upper:]' '[:lower:]' | LC_ALL=C sort -u)
+echo ""
+echo "=== In both ===" && comm -12 <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos\ from\ 2020 -type f -exec basename {} \; | tr '[:upper:]' '[:lower:]' | LC_ALL=C sort -u) <(find ~/Downloads/Takeout/Takeout/Google\ Photos/Photos\ from\ 2021 -type f -exec basename {} \; | tr '[:upper:]' '[:lower:]' | LC_ALL=C sort -u)
 
 # Copy json files from one directory to another
 cp ~/Downloads/TakeoutPhoto/Takeout/"Google Photos"/"Photos from 2019"/*.json ~/Downloads/GooglePhotos/Photos-3-001/
