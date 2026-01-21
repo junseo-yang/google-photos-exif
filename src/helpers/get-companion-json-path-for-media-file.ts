@@ -126,6 +126,78 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
     // If we can't read the directory, just continue
   }
 
+  // Special case: For video files, check if there's a corresponding image file with JSON metadata
+  // This handles cases where Google Photos exports both an image and video (e.g., IMG.jpg and IMG.mp4)
+  // and the JSON metadata is only provided for the image file
+  if (['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'].includes(mediaFileExtension.toLowerCase())) {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.heic', '.webp'];
+    
+    for (const imgExt of imageExtensions) {
+      // Case 1: Look for image file with the same name (including counter if present)
+      // E.g., for FullSizeRender(1).MP4, look for FullSizeRender(1).jpg
+      const companionImageNameSameCounter = `${mediaFileNameWithoutExtension}${imgExt}`;
+      const companionImagePathSameCounter = resolve(directoryPath, companionImageNameSameCounter);
+      
+      if (existsSync(companionImagePathSameCounter)) {
+        // For files with counter suffix, Google provides: FullSizeRender.jpg.supplemental-metadata(1).json
+        // Extract the counter from the original filename
+        const counterMatch = mediaFileNameWithoutExtension.match(/\(\d+\)$/);
+        if (counterMatch) {
+          // Look for FullSizeRender.jpg.supplemental-metadata(1).json
+          const baseNameWithoutCounter = mediaFileNameWithoutExtension.slice(0, counterMatch.index);
+          const jsonWithCounter = `${baseNameWithoutCounter}${imgExt}.supplemental-metadata${counterMatch[0]}.json`;
+          const jsonWithCounterPath = resolve(directoryPath, jsonWithCounter);
+          if (existsSync(jsonWithCounterPath)) {
+            return jsonWithCounterPath;
+          }
+        }
+        
+        // Also try standard companion JSON patterns
+        const companionJsonCandidates = [
+          `${mediaFileNameWithoutExtension}${imgExt}.json`,
+          `${mediaFileNameWithoutExtension}${imgExt}.supplemental-metadata.json`,
+        ];
+        
+        for (const candidate of companionJsonCandidates) {
+          const candidatePath = resolve(directoryPath, candidate);
+          if (existsSync(candidatePath)) {
+            return candidatePath;
+          }
+        }
+      }
+      
+      // Case 2: Look for base image file without counter
+      // E.g., for FullSizeRender(1).MP4, also check if FullSizeRender.jpg exists
+      const baseNameMatch = mediaFileNameWithoutExtension.match(/^(.+?)\(\d+\)$/);
+      if (baseNameMatch) {
+        const baseNameWithoutCounter = baseNameMatch[1];
+        const companionImageNameBase = `${baseNameWithoutCounter}${imgExt}`;
+        const companionImagePathBase = resolve(directoryPath, companionImageNameBase);
+        
+        if (existsSync(companionImagePathBase)) {
+          // For base files, Google provides: FullSizeRender.jpg.supplemental-metadata.json
+          const jsonBase = `${baseNameWithoutCounter}${imgExt}.supplemental-metadata.json`;
+          const jsonBasePath = resolve(directoryPath, jsonBase);
+          if (existsSync(jsonBasePath)) {
+            return jsonBasePath;
+          }
+          
+          // Also try standard patterns
+          const baseJsonCandidates = [
+            `${baseNameWithoutCounter}${imgExt}.json`,
+          ];
+          
+          for (const candidate of baseJsonCandidates) {
+            const candidatePath = resolve(directoryPath, candidate);
+            if (existsSync(candidatePath)) {
+              return candidatePath;
+            }
+          }
+        }
+      }
+    }
+  }
+
   // If no JSON file was found, just return null - we won't be able to adjust the date timestamps without finding a
   // suitable JSON sidecar file
   return null;
